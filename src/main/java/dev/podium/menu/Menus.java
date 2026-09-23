@@ -16,6 +16,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -26,9 +28,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /** Renders and handles clicks for the leaderboards dashboard, a single board's ranking list, and the stats menu. */
 public final class Menus implements Listener {
+
+    private static final Pattern SAFE_USERNAME = Pattern.compile("^[A-Za-z0-9_]{1,16}$");
 
     private static final class DashboardHolder implements InventoryHolder {
         Inventory inventory;
@@ -123,7 +128,7 @@ public final class Menus implements Listener {
             lore.addAll(board.description());
             lore.add("");
             lore.add("Click to Browse");
-            inventory.setItem(slots.get(i), new ItemBuilder(board.icon()).name(board.name()).lore(lore).build());
+            setItem(inventory, slots.get(i), new ItemBuilder(board.icon()).name(board.name()).lore(lore).build());
         }
 
         placeFilter(inventory, player, lb);
@@ -144,14 +149,14 @@ public final class Menus implements Listener {
             if (line.equals("<period-list>")) {
                 for (Period period : settings.periods()) {
                     String key = period.id().equals(selected) ? "dashboard.filter.period-selected" : "dashboard.filter.period-unselected";
-                    lore.add(TextUtil.fill(lb.getString(key), Map.of("<period>", period.label())));
+                    lore.add(TextUtil.fill(lb.getString(key, "<period>"), Map.of("<period>", period.label())));
                 }
             } else {
                 lore.add(line);
             }
         }
 
-        Material material = Material.matchMaterial(lb.getString("dashboard.filter.material", "HOPPER"));
+        Material material = Settings.matchMaterial(lb.getString("dashboard.filter.material", "HOPPER"));
         inventory.setItem(slot, new ItemBuilder(material).name(lb.getString("dashboard.filter.name")).lore(lore).build());
     }
 
@@ -188,21 +193,27 @@ public final class Menus implements Listener {
         Inventory inventory = Bukkit.createInventory(holder, rows * 9, TextUtil.item(title));
         holder.inventory = inventory;
 
+        renderBoard(inventory, player, board, page);
+        player.openInventory(inventory);
+    }
+
+    /** Fills an already-open board inventory in place, without reopening it (used by the refresh task). */
+    private void renderBoard(Inventory inventory, Player player, Board board, int page) {
+        YamlConfiguration lb = settings.leaderboards();
         fillFiller(inventory, lb, "board-template.filler");
 
         Board.PlaceholderPair pair = board.placeholdersFor(periodFor(player));
         List<Integer> slots = Settings.parseSlots(lb.getString("board-template.entry-slots"));
         List<String> loreTemplate = lb.getStringList("board-template.entry-lore");
-        String nameTemplate = lb.getString("board-template.entry-name");
+        String nameTemplate = lb.getString("board-template.entry-name", "#<position> <player>");
 
         int startPosition = page * slots.size() + 1;
         int filled = 0;
         if (pair != null) {
             for (int i = 0; i < slots.size(); i++) {
                 int position = startPosition + i;
-                String namePlaceholder = pair.namePattern().replace("<position>", String.valueOf(position));
-                String resolvedName = Placeholders.resolve(player, namePlaceholder);
-                if (resolvedName.isBlank() || resolvedName.contains("%")) break;
+                String resolvedName = resolveEntryName(player, pair, position);
+                if (resolvedName == null) break;
 
                 String valuePlaceholder = pair.valuePattern().replace("<position>", String.valueOf(position));
                 String resolvedValue = Placeholders.resolve(player, valuePlaceholder);
@@ -213,7 +224,7 @@ public final class Menus implements Listener {
                 List<String> lore = new ArrayList<>();
                 for (String line : loreTemplate) lore.add(TextUtil.fill(line, tokens));
 
-                inventory.setItem(slots.get(i), new ItemBuilder(Material.PLAYER_HEAD)
+                setItem(inventory, slots.get(i), new ItemBuilder(Material.PLAYER_HEAD)
                         .name(TextUtil.fill(nameTemplate, tokens)).lore(lore)
                         .tag(entryPlayerKey, resolvedName).build());
                 filled++;
@@ -222,9 +233,18 @@ public final class Menus implements Listener {
 
         placeNav(inventory, lb, "board-template.back");
         if (page > 0) placeNav(inventory, lb, "board-template.previous-page");
-        if (filled == slots.size()) placeNav(inventory, lb, "board-template.next-page");
+        // Only show a next page if one more entry actually resolves - a page that's exactly full
+        // otherwise looks like it has more, and the "next page" is blank.
+        if (pair != null && filled == slots.size() && resolveEntryName(player, pair, startPosition + slots.size()) != null) {
+            placeNav(inventory, lb, "board-template.next-page");
+        }
+    }
 
-        player.openInventory(inventory);
+    /** Resolves the leaderboard entry at a position, or null if that position doesn't exist. */
+    private String resolveEntryName(Player player, Board.PlaceholderPair pair, int position) {
+        String placeholder = pair.namePattern().replace("<position>", String.valueOf(position));
+        String resolved = Placeholders.resolve(player, placeholder);
+        return (resolved.isBlank() || resolved.contains("%")) ? null : resolved;
     }
 
     // ---------------------------------------------------------------- stats
@@ -276,9 +296,9 @@ public final class Menus implements Listener {
     // ---------------------------------------------------------------- shared rendering
 
     private void fillFiller(Inventory inventory, YamlConfiguration source, String path) {
-        Material material = Material.matchMaterial(source.getString(path + ".material", "BLACK_STAINED_GLASS_PANE"));
+        Material material = Settings.matchMaterial(source.getString(path + ".material", "BLACK_STAINED_GLASS_PANE"));
         Component name = TextUtil.item(source.getString(path + ".name", " "));
-        ItemStack filler = new ItemStack(material == null ? Material.BLACK_STAINED_GLASS_PANE : material);
+        ItemStack filler = new ItemStack(material);
         var meta = filler.getItemMeta();
         meta.displayName(name);
         filler.setItemMeta(meta);
@@ -287,16 +307,26 @@ public final class Menus implements Listener {
 
     private void placeNav(Inventory inventory, YamlConfiguration source, String path) {
         Settings.MenuItem item = settings.item(source, path);
-        inventory.setItem(item.slot(), new ItemBuilder(item.material()).name(item.name()).build());
+        setItem(inventory, item.slot(), new ItemBuilder(item.material()).name(item.name()).build());
+    }
+
+    /** setItem that ignores an out-of-range slot instead of throwing, since slots are config-driven. */
+    private void setItem(Inventory inventory, int slot, ItemStack item) {
+        if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, item);
     }
 
     private void refreshOpenMenus() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            InventoryHolder holder = player.getOpenInventory().getTopInventory().getHolder();
-            if (holder instanceof BoardHolder boardHolder) {
-                openBoard(player, boardHolder.board, boardHolder.page);
-            } else if (holder instanceof StatsHolder statsHolder) {
-                renderStats(player.getOpenInventory().getTopInventory(), settings.statsMenu(), statsHolder.target);
+            try {
+                Inventory top = player.getOpenInventory().getTopInventory();
+                InventoryHolder holder = top.getHolder();
+                if (holder instanceof BoardHolder boardHolder) {
+                    renderBoard(top, player, boardHolder.board, boardHolder.page);
+                } else if (holder instanceof StatsHolder statsHolder) {
+                    renderStats(top, settings.statsMenu(), statsHolder.target);
+                }
+            } catch (RuntimeException e) {
+                plugin.getLogger().warning("Couldn't refresh " + player.getName() + "'s menu: " + e);
             }
         }
     }
@@ -304,9 +334,25 @@ public final class Menus implements Listener {
     // ---------------------------------------------------------------- clicks
 
     @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        selectedPeriod.remove(event.getPlayer().getUniqueId());
+    }
+
+    private static boolean isPodiumMenu(InventoryHolder holder) {
+        return holder instanceof DashboardHolder || holder instanceof BoardHolder || holder instanceof StatsHolder;
+    }
+
+    @EventHandler
+    public void onDrag(InventoryDragEvent event) {
+        if (!isPodiumMenu(event.getInventory().getHolder())) return;
+        int topSize = event.getView().getTopInventory().getSize();
+        if (event.getRawSlots().stream().anyMatch(slot -> slot < topSize)) event.setCancelled(true);
+    }
+
+    @EventHandler
     public void onClick(InventoryClickEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
-        if (!(holder instanceof DashboardHolder) && !(holder instanceof BoardHolder) && !(holder instanceof StatsHolder)) return;
+        if (!isPodiumMenu(holder)) return;
 
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player)) return;
@@ -343,7 +389,9 @@ public final class Menus implements Listener {
                 if (clicked == null || clicked.getItemMeta() == null) return;
                 String playerName = clicked.getItemMeta().getPersistentDataContainer()
                         .get(entryPlayerKey, org.bukkit.persistence.PersistentDataType.STRING);
-                if (playerName == null) return;
+                // A Minecraft username only - refuses to substitute a nickname/PAPI value containing
+                // spaces or other tokens into a configured [command] action.
+                if (playerName == null || !SAFE_USERNAME.matcher(playerName).matches()) return;
                 for (String action : lb.getStringList("board-template.entry-actions")) {
                     runAction(player, action.replace("<player>", playerName));
                 }

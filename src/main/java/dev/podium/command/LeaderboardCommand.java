@@ -59,7 +59,7 @@ public final class LeaderboardCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length != 1) return List.of();
+        if (args.length != 1) return new ArrayList<>();
         List<String> options = new ArrayList<>(settings.boards().keySet());
         if (sender.hasPermission("podium.admin")) options.add("reload");
         return options;

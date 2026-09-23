@@ -88,7 +88,7 @@ public final class Settings {
 
             boards.put(id, new Board(
                     id,
-                    Material.matchMaterial(board.getString("icon", "STONE")),
+                    matchMaterial(board.getString("icon", "STONE")),
                     board.getString("name", id),
                     board.getString("category", ""),
                     board.getStringList("description"),
@@ -127,9 +127,15 @@ public final class Settings {
     public MenuItem item(YamlConfiguration source, String path) {
         return new MenuItem(
                 source.getInt(path + ".slot", 0),
-                Material.matchMaterial(source.getString(path + ".material", "STONE")),
+                matchMaterial(source.getString(path + ".material", "STONE")),
                 source.getString(path + ".name", ""),
                 source.getStringList(path + ".lore"));
+    }
+
+    /** {@link Material#matchMaterial} but falls back to STONE for a typo'd or missing name, instead of null. */
+    public static Material matchMaterial(String name) {
+        Material material = name == null ? null : Material.matchMaterial(name);
+        return material != null ? material : Material.STONE;
     }
 
     /** Parses "[0-6, 9-16, 25]" style slot lists into an ordered list of slots. */

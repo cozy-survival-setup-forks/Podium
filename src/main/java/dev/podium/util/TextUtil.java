@@ -41,15 +41,21 @@ public final class TextUtil {
 
     /** For item names and lore, which are italic unless told otherwise. */
     public static Component item(String text) {
-        return MINI.deserialize(convertLegacy(text)).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
+        return component(text).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
 
+    /** Falls back to the raw text on a malformed tag, since this can carry a player-controlled name/nickname. */
     public static Component component(String text) {
-        return MINI.deserialize(convertLegacy(text));
+        try {
+            return MINI.deserialize(convertLegacy(text));
+        } catch (RuntimeException e) {
+            return Component.text(text);
+        }
     }
 
-    /** Replaces {@code <token>} style placeholders. */
+    /** Replaces {@code <token>} style placeholders. Returns "" for a missing/null config value. */
     public static String fill(String text, Map<String, String> values) {
+        if (text == null) return "";
         String result = text;
         for (Map.Entry<String, String> value : values.entrySet()) {
             result = result.replace(value.getKey(), value.getValue());
