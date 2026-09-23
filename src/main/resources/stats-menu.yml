@@ -1,0 +1,52 @@
+# One menu, edited in one place. Add or remove entries under "stats" freely - each is just
+# a slot, an icon, and any PlaceholderAPI placeholder for its lore.
+
+title: "<player>'s Stats"
+rows: 5
+
+filler:
+  material: BLACK_STAINED_GLASS_PANE
+  name: " "
+
+profile:
+  slot: 4
+  material: PLAYER_HEAD
+  name: "&a<player>'s Profile"
+  lore:
+    - "&7First joined: &f%player_first_join_date%"
+
+stats:
+  kills:
+    slot: 20
+    material: NETHERITE_SWORD
+    name: "&cKills"
+    lore:
+      - "&7Player kills: &c%statistic_player_kills%"
+
+  deaths:
+    slot: 21
+    material: SKELETON_SKULL
+    name: "&8Deaths"
+    lore:
+      - "&7Deaths: &8%statistic_deaths%"
+
+  balance:
+    slot: 22
+    material: EMERALD
+    name: "&aBalance"
+    lore:
+      - "&7Money: &a%vault_eco_balance_formatted%"
+
+  mob_kills:
+    slot: 23
+    material: ZOMBIE_HEAD
+    name: "&2Mob Kills"
+    lore:
+      - "&7Mobs killed: &2%statistic_mob_kills%"
+
+  playtime:
+    slot: 24
+    material: CLOCK
+    name: "&ePlaytime"
+    lore:
+      - "&7Time played: &e%statistic_time_played:days%d %statistic_time_played:hours%h %statistic_time_played:minutes%m"

@@ -1,0 +1,6 @@
+prefix: "&8[&6Podium&8] "
+no-permission: "&cYou don't have permission to do that."
+board-unavailable: "&cThat leaderboard isn't set up yet."
+board-not-found: "&cUnknown leaderboard '<board>'."
+player-not-found: "&cPlayer '<player>' was not found."
+reloaded: "&aPodium's configuration was reloaded."

@@ -1,0 +1,4 @@
+# Podium settings. Board and stat item definitions live in leaderboards.yml and stats-menu.yml.
+
+# How often (in ticks) open menus refresh their placeholder values. 20 ticks = 1 second.
+refresh-interval-ticks: 100

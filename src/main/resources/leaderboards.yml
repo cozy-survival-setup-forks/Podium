@@ -1,0 +1,148 @@
+# The dashboard is what /leaderboards opens: a grid of every board below, plus a filter to
+# switch between time periods. To add a new leaderboard, add an entry under "boards" - it
+# shows up on the dashboard automatically, no slot math needed.
+
+dashboard:
+  title: "Leaderboards - <period>"
+  rows: 4
+
+  filler:
+    material: BLACK_STAINED_GLASS_PANE
+    name: " "
+
+  # slots the board icons are allowed to flow into, top to bottom, left to right.
+  # anything left over is paginated onto a second page.
+  board-slots: "[0-6, 9-16, 18-25]"
+
+  filter:
+    slot: 31
+    material: HOPPER
+    name: "&d&lFILTER"
+    lore:
+      - "&7Leaderboards"
+      - ""
+      - "&fCurrent Type:"
+      - "<period-list>"
+      - ""
+      - "&e&lCLICK &fto Sort"
+    period-selected: "&d> <period>"
+    period-unselected: "&8- <period>"
+
+  previous-page:
+    slot: 29
+    material: ARROW
+    name: "&ePrevious Page"
+  next-page:
+    slot: 33
+    material: ARROW
+    name: "&eNext Page"
+
+# Shared chrome for every board's own ranking list, so a new board only needs the entries
+# under "boards" below - it doesn't have to redeclare filler/navigation/row formatting.
+board-template:
+  rows: 6
+  title: "<board> - <period>"
+
+  filler:
+    material: BLACK_STAINED_GLASS_PANE
+    name: " "
+
+  entry-slots: "[0-44]"
+
+  entry-name: "&f#<position> <player>"
+  entry-lore:
+    - "&7<board>"
+    - ""
+    - "&fPosition: &6#<position>"
+    - "&fPlayer: &6<player>"
+    - "&fValue: &6<value>"
+    - ""
+    - "&e&lCLICK &fto View Profile"
+  entry-actions:
+    - "[command] stats <player>"
+
+  back:
+    slot: 49
+    material: BARRIER
+    name: "&cBack"
+  previous-page:
+    slot: 48
+    material: ARROW
+    name: "&ePrevious Page"
+  next-page:
+    slot: 50
+    material: ARROW
+    name: "&eNext Page"
+
+periods:
+  - id: all_time
+    label: "All Time"
+  - id: monthly
+    label: "Monthly"
+  - id: weekly
+    label: "Weekly"
+  - id: daily
+    label: "Daily"
+
+# Each board only needs an icon, a description for the dashboard tooltip, and one
+# placeholder pair per period it supports. Missing periods fall back to all_time.
+boards:
+  money:
+    icon: EMERALD
+    name: "&a$ Top Money"
+    category: "Money"
+    description:
+      - "Ranks players by the total"
+      - "amount of money they have earned."
+    periods:
+      all_time:
+        name: "%topper_money;top_name;<position>%"
+        value: "%topper_money;top_value;<position>%"
+
+  kills:
+    icon: DIAMOND_SWORD
+    name: "&c⚔ Top Kills"
+    category: "PvP"
+    description:
+      - "Ranks players by how many"
+      - "other players they have killed."
+    periods:
+      all_time:
+        name: "%topper_kills;top_name;<position>%"
+        value: "%topper_kills;top_value;<position>%"
+
+  mob_kills:
+    icon: ZOMBIE_HEAD
+    name: "&2Top Mob Kills"
+    category: "PvE"
+    description:
+      - "Ranks players by how many"
+      - "mobs they have killed."
+    periods:
+      all_time:
+        name: "%topper_mob_kills;top_name;<position>%"
+        value: "%topper_mob_kills;top_value;<position>%"
+
+  playtime:
+    icon: CLOCK
+    name: "&eTop Playtime"
+    category: "Activity"
+    description:
+      - "Ranks players by how much"
+      - "time they've spent on the server."
+    periods:
+      all_time:
+        name: "%topper_playtime;top_name;<position>%"
+        value: "%topper_playtime;top_value;<position>%"
+
+  blocks_broken:
+    icon: IRON_PICKAXE
+    name: "&7Top Blocks Broken"
+    category: "Mining"
+    description:
+      - "Ranks players by how many"
+      - "blocks they've broken."
+    periods:
+      all_time:
+        name: "%topper_blocks_broken;top_name;<position>%"
+        value: "%topper_blocks_broken;top_value;<position>%"

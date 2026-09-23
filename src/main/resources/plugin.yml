@@ -1,0 +1,31 @@
+name: Podium
+version: '${version}'
+main: dev.podium.PodiumPlugin
+api-version: '1.21'
+description: Leaderboard and stats menus, backed by PlaceholderAPI (works great with Topper)
+authors: [Groovyy Roy]
+softdepend:
+  - PlaceholderAPI
+
+commands:
+  leaderboards:
+    description: Open the leaderboards dashboard, or jump to one board
+    usage: /<command> [board] [reload]
+    aliases: [leaderboard, lb]
+  stats:
+    description: View your or another player's stats menu
+    usage: /<command> [player]
+
+permissions:
+  podium.leaderboards:
+    description: Open the leaderboards dashboard and boards
+    default: true
+  podium.stats:
+    description: View your own stats menu
+    default: true
+  podium.stats.others:
+    description: View another player's stats menu
+    default: op
+  podium.admin:
+    description: Reload Podium's configuration
+    default: op

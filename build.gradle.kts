@@ -1,0 +1,39 @@
+plugins {
+    id("java")
+}
+
+group = "dev.podium"
+version = project.property("pluginVersion") as String
+description = "Leaderboard and stats menus for the Cozy Survival server"
+
+repositories {
+    mavenCentral()
+    maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+}
+
+dependencies {
+    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly("me.clip:placeholderapi:2.11.6")
+}
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+}
+
+tasks.compileJava {
+    options.encoding = "UTF-8"
+}
+
+tasks.processResources {
+    val props = mapOf("version" to version)
+    inputs.properties(props)
+    filteringCharset = "UTF-8"
+    filesMatching("plugin.yml") {
+        expand(props)
+    }
+}
+
+tasks.jar {
+    archiveFileName.set("Podium-${project.version}.jar")
+}
