@@ -282,11 +282,11 @@ public final class WorldBoards implements Listener {
 
         // Built when a player comes near, taken down when they are all far away, so empty places cost nothing
         if (board.spawned()) {
-            if (!near(at, style.viewRange + 64)) {
+            if (!style.alwaysBuilt && !near(at, style.viewRange + 64)) {
                 board.despawn();
                 return;
             }
-        } else if (near(at, style.viewRange + 16) && board.chunksLoaded(at.getWorld())) {
+        } else if ((style.alwaysBuilt || near(at, style.viewRange + 16)) && board.chunksLoaded(at.getWorld())) {
             Player nearest = nearestTo(at);
             board.spawn(nearest);
         }
@@ -295,7 +295,7 @@ public final class WorldBoards implements Listener {
         board.resetIfIdle(now, board.nearest());
         if (board.due(now)) {
             Player nearest = board.nearest();
-            if (nearest != null) board.render(nearest, false);
+            if (nearest != null || style.alwaysBuilt) board.render(nearest, false);
         }
     }
 

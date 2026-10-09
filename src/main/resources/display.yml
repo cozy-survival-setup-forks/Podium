@@ -6,6 +6,9 @@
 refresh-seconds: 5
 # How far away (blocks) a board can be seen, and how close a player has to be for it to refresh.
 view-range: 32
+# Keep every board built all the time, also when nobody is near. Off by default: a board is only built while a
+# player is within view-range + 16 blocks of it, so places nobody visits cost nothing.
+always-built: false
 # Rows of the table (1 to 15).
 rows: 10
 # After a click the board goes back to its first board and period when nobody clicks for this many seconds.

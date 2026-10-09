@@ -19,6 +19,7 @@ final class Style {
     final int rows;
     final int idleResetSeconds;
     final boolean transition;
+    final boolean alwaysBuilt;
     final String clickSound;
     final double rowHeight;
     final double textScale;
@@ -44,6 +45,7 @@ final class Style {
         rows = clamp(c.getInt("rows", 10), 1, 15);
         idleResetSeconds = Math.max(0, c.getInt("idle-reset-seconds", 30));
         transition = c.getBoolean("transition", true);
+        alwaysBuilt = c.getBoolean("always-built", false);
         clickSound = c.getString("click-sound", "ui.button.click");
         rowHeight = clamp(c.getDouble("row-height", 0.17), 0.05, 1.0);
         textScale = clamp(c.getDouble("text-scale", 0.6), 0.1, 4.0);
