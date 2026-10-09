@@ -3,7 +3,8 @@ version: '${version}'
 main: dev.podium.PodiumPlugin
 api-version: '1.21'
 description: Leaderboard and stats menus, backed by PlaceholderAPI (works great with Topper)
-authors: [Groovyy Roy]
+authors: [Groovified]
+website: https://discord.gg/blockie
 softdepend:
   - PlaceholderAPI
 

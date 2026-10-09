@@ -4,7 +4,7 @@ plugins {
 
 group = "dev.podium"
 version = project.property("pluginVersion") as String
-description = "Leaderboard and stats menus for the Cozy Survival server"
+description = "Leaderboard menus, world boards and a stats menu, backed by PlaceholderAPI and Topper"
 
 repositories {
     mavenCentral()
@@ -45,4 +45,7 @@ tasks.processResources {
 
 tasks.jar {
     archiveFileName.set("Podium-${project.version}.jar")
+    manifest {
+        attributes("Implementation-Vendor" to "Groovified / Blockie Studios")
+    }
 }
