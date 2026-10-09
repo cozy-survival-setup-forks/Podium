@@ -40,6 +40,7 @@ public final class PodiumPlugin extends JavaPlugin {
         podiumCommand.setExecutor(podium);
         podiumCommand.setTabCompleter(podium);
 
+        Metrics.start(this);
         Banner.print(this, "Thanks for keeping score.");
     }
 

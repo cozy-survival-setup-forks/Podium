@@ -9,3 +9,9 @@ topper:
   # Also make a board of every Topper holder that no board in leaderboards.yml uses yet. Holders that only exist to
   # feed a time window of another one (money_daily next to money) are not made into boards of their own.
   auto-boards: false
+
+# Anonymous usage beacon: plugin name/version, server software/version and online/max player
+# counts, nothing else. Set to false to turn it off.
+metrics:
+  enabled: true
+  interval-minutes: 45
