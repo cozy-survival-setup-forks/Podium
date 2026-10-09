@@ -84,8 +84,27 @@ periods:
   - id: daily
     label: "Daily"
 
-# Each board only needs an icon, a description for the dashboard tooltip, and one
-# placeholder pair per period it supports. Missing periods fall back to all_time.
+# Each board needs an icon, a name, a description for the dashboard tooltip, and where its numbers come from.
+#
+# With the Topper plugin that is one line, the name of the holder:   topper: money
+# Podium reads the holders from Topper's own config.yml and checks the name when it starts. If Topper also has
+# holders called <holder>_daily, <holder>_weekly or <holder>_monthly (TimedTopper makes those), the Daily, Weekly
+# and Monthly buttons use them by themselves. To name them yourself:
+#     topper:
+#       all_time: money
+#       daily: money_daily
+#       monthly: money_monthly
+# `value-format: "#,###"` is a Topper number format for the values.
+#
+# Anything else that PlaceholderAPI can give is written out, one pair for each period it has (a period a board does
+# not have is not shown as a button, or falls back to all_time in the menus):
+#     periods:
+#       all_time:
+#         name: "%some_placeholder_<position>_name%"
+#         value: "%some_placeholder_<position>_value%"
+#
+# `display` is for the boards that stand in the world (/podium display create): the title, the head of the value
+# column, a text after each value, and the text of the tab. All optional.
 boards:
   money:
     icon: EMERALD
@@ -94,22 +113,22 @@ boards:
     description:
       - "Ranks players by the total"
       - "amount of money they have earned."
-    periods:
-      all_time:
-        name: "%topper_money;top_name;<position>%"
-        value: "%topper_money;top_value;<position>%"
+    topper: money
+    display:
+      value-header: "Balance"
+      tab: "Balance"
 
   kills:
     icon: DIAMOND_SWORD
-    name: "&c⚔ Top Kills"
+    name: "&c\u2694 Top Kills"
     category: "PvP"
     description:
       - "Ranks players by how many"
       - "other players they have killed."
-    periods:
-      all_time:
-        name: "%topper_kills;top_name;<position>%"
-        value: "%topper_kills;top_value;<position>%"
+    topper: kills
+    display:
+      value-header: "Kills"
+      tab: "Kills"
 
   mob_kills:
     icon: ZOMBIE_HEAD
@@ -118,10 +137,10 @@ boards:
     description:
       - "Ranks players by how many"
       - "mobs they have killed."
-    periods:
-      all_time:
-        name: "%topper_mob_kills;top_name;<position>%"
-        value: "%topper_mob_kills;top_value;<position>%"
+    topper: mob_kills
+    display:
+      value-header: "Mobs"
+      tab: "Mob Kills"
 
   playtime:
     icon: CLOCK
@@ -130,10 +149,10 @@ boards:
     description:
       - "Ranks players by how much"
       - "time they've spent on the server."
-    periods:
-      all_time:
-        name: "%topper_playtime;top_name;<position>%"
-        value: "%topper_playtime;top_value;<position>%"
+    topper: playtime
+    display:
+      value-header: "Time"
+      tab: "Playtime"
 
   blocks_broken:
     icon: IRON_PICKAXE
@@ -142,7 +161,7 @@ boards:
     description:
       - "Ranks players by how many"
       - "blocks they've broken."
-    periods:
-      all_time:
-        name: "%topper_blocks_broken;top_name;<position>%"
-        value: "%topper_blocks_broken;top_value;<position>%"
+    topper: blocks_broken
+    display:
+      value-header: "Blocks"
+      tab: "Mining"

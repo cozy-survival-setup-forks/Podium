@@ -1,0 +1,64 @@
+# Boards drawn in the world, with tabs players click to switch between the boards and between Daily, Monthly and
+# All Time. Put one up with /podium display create <id> <board> [more boards], look at the wall you want it on.
+# Where they are is saved in displays.yml. /podium reload applies changes made here.
+
+# Seconds between reading the placeholders again. Boards with nobody close by are left alone.
+refresh-seconds: 5
+# How far away (blocks) a board can be seen, and how close a player has to be for it to refresh.
+view-range: 32
+# Rows of the table (1 to 15).
+rows: 10
+# After a click the board goes back to its first board and period when nobody clicks for this many seconds.
+# 0 keeps whatever was clicked last.
+idle-reset-seconds: 30
+# A short blank, then the rows fill in from the top, when a tab is clicked.
+transition: true
+# Played to the player who clicks a tab. Use a sound key such as ui.button.click, or NONE.
+click-sound: ui.button.click
+
+# Size. A board has its own scale too (/podium display scale <id> <number>), which multiplies these.
+# text-scale is how big the letters are, row-height is the distance between two rows in blocks.
+text-scale: 0.6
+row-height: 0.17
+
+# A dark panel behind the board so it can be read on any wall. Turn it off if you build your own frame.
+# color is #RRGGBB, or #AARRGGBB when it should be see-through (#99000000 is a little over half black).
+panel:
+  enabled: true
+  color: "#99000000"
+  padding: 0.25
+
+# MiniMessage and & codes. <board> is the title of the board, <period> the time window shown.
+title: "<bold><board>"
+header:
+  rank: "<gray><bold>\u2116"
+  player: "<gray><bold>Player"
+  # <value-header> comes from the board (display.value-header in leaderboards.yml)
+  value: "<gray><bold><value-header>"
+
+# Where the three columns sit, in blocks from the middle of the board (right is positive).
+columns:
+  rank: -1.0
+  player: 0.0
+  value: 1.0
+
+# What a row without a player shows
+empty-player: "<dark_gray>---"
+empty-value: "<dark_gray>---"
+
+# Colours of the first ranks (1st, 2nd, 3rd), then of every other rank, the names and the values
+rank-colors: ["#FFD700", "#C0C0C0", "#CD7F32"]
+rank-color: "#FFFFFF"
+player-color: "#FFFFFF"
+value-color: "#FFD27F"
+
+tabs:
+  # <label> is the name of the board or of the time window
+  selected: "<white><bold> <label> "
+  unselected: "<gray> <label> "
+  selected-background: "#B0303A48"
+  unselected-background: "#00000000"
+  # Blocks between the middle of two tabs
+  spacing: 1.1
+  # How wide the part of a tab that can be clicked is (keep it a bit smaller than the spacing)
+  hit-width: 0.7

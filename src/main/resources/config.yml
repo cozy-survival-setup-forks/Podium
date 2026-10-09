@@ -2,3 +2,10 @@
 
 # How often (in ticks) open menus refresh their placeholder values. 20 ticks = 1 second.
 refresh-interval-ticks: 100
+
+# The Topper plugin (https://github.com/Topper-MC) fills the boards through PlaceholderAPI. In leaderboards.yml a
+# board only needs `topper: <holder>`. The holders are read from Topper's own config.yml.
+topper:
+  # Also make a board of every Topper holder that no board in leaderboards.yml uses yet. Holders that only exist to
+  # feed a time window of another one (money_daily next to money) are not made into boards of their own.
+  auto-boards: false

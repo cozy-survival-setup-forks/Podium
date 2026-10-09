@@ -16,10 +16,12 @@ public final class LeaderboardCommand implements CommandExecutor, TabCompleter {
 
     private final Settings settings;
     private final Menus menus;
+    private final dev.podium.world.WorldBoards worlds;
 
-    public LeaderboardCommand(Settings settings, Menus menus) {
+    public LeaderboardCommand(Settings settings, Menus menus, dev.podium.world.WorldBoards worlds) {
         this.settings = settings;
         this.menus = menus;
+        this.worlds = worlds;
     }
 
     @Override
@@ -38,7 +40,9 @@ public final class LeaderboardCommand implements CommandExecutor, TabCompleter {
                 player.sendMessage(settings.prefixed("no-permission"));
                 return true;
             }
-            player.sendMessage(settings.prefixed(settings.reload() ? "reloaded" : "reload-failed"));
+            boolean ok = settings.reload();
+            if (ok) worlds.reload();
+            player.sendMessage(settings.prefixed(ok ? "reloaded" : "reload-failed"));
             return true;
         }
 

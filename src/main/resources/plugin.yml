@@ -15,6 +15,10 @@ commands:
   stats:
     description: View your or another player's stats menu
     usage: /<command> [player]
+  podium:
+    description: Reload Podium and manage the boards that stand in the world
+    usage: /<command> <reload|display|topper>
+    aliases: [pod]
 
 permissions:
   podium.leaderboards:
@@ -27,5 +31,5 @@ permissions:
     description: View another player's stats menu
     default: op
   podium.admin:
-    description: Reload Podium's configuration
+    description: Reload Podium and put up or take down world boards
     default: op

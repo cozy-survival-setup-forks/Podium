@@ -2,6 +2,7 @@ package dev.podium.config;
 
 import dev.podium.board.Board;
 import dev.podium.board.Period;
+import dev.podium.board.Topper;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -9,10 +10,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /** Loads config.yml, leaderboards.yml and stats-menu.yml. Call {@link #reload()} to re-read them. */
@@ -30,6 +33,8 @@ public final class Settings {
     private YamlConfiguration leaderboards;
     private YamlConfiguration statsMenu;
     private YamlConfiguration messages;
+    private YamlConfiguration display;
+    private Set<String> topperHolders = Set.of();
 
     private final Map<String, Board> boards = new LinkedHashMap<>();
     private final List<Period> periods = new ArrayList<>();
@@ -57,13 +62,15 @@ public final class Settings {
         saveDefault("leaderboards.yml");
         saveDefault("stats-menu.yml");
         saveDefault("messages.yml");
+        saveDefault("display.yml");
 
-        YamlConfiguration newConfig, newBoards, newStats, newMessages;
+        YamlConfiguration newConfig, newBoards, newStats, newMessages, newDisplay;
         try {
             newConfig = strict("config.yml");
             newBoards = strict("leaderboards.yml");
             newStats = strict("stats-menu.yml");
             newMessages = strict("messages.yml");
+            newDisplay = strict("display.yml");
         } catch (java.io.IOException | org.bukkit.configuration.InvalidConfigurationException e) {
             plugin.getLogger().severe(e.getMessage() + " Fix the file, or delete it to get the default one.");
             return false;
@@ -82,6 +89,7 @@ public final class Settings {
         leaderboards = newBoards;
         statsMenu = newStats;
         messages = newMessages;
+        display = newDisplay;
 
         loadPeriods();
         loadBoards();
@@ -120,32 +128,118 @@ public final class Settings {
 
     private void loadBoards() {
         boards.clear();
+        topperHolders = Topper.holders(plugin.getDataFolder().getParentFile());
         ConfigurationSection section = leaderboards.getConfigurationSection("boards");
-        if (section == null) return;
+        Set<String> used = new HashSet<>();
 
-        for (String id : section.getKeys(false)) {
-            ConfigurationSection board = section.getConfigurationSection(id);
-            if (board == null) continue;
+        if (section != null) {
+            for (String id : section.getKeys(false)) {
+                ConfigurationSection board = section.getConfigurationSection(id);
+                if (board == null) continue;
 
-            Map<String, Board.PlaceholderPair> periodMap = new LinkedHashMap<>();
-            ConfigurationSection periodsSection = board.getConfigurationSection("periods");
-            if (periodsSection != null) {
-                for (String periodId : periodsSection.getKeys(false)) {
-                    String path = "periods." + periodId + ".";
-                    periodMap.put(periodId, new Board.PlaceholderPair(
-                            board.getString(path + "name", ""),
-                            board.getString(path + "value", "")));
+                Map<String, Board.PlaceholderPair> periodMap = new LinkedHashMap<>();
+                String format = board.getString("value-format");
+
+                // topper: money, or topper: {all_time: money, daily: money_daily}
+                Object topper = board.get("topper");
+                if (topper instanceof String holder && !holder.isBlank()) {
+                    for (Map.Entry<String, String> e : Topper.periodHolders(holder.trim(), topperHolders).entrySet()) {
+                        periodMap.put(e.getKey(), Topper.pair(e.getValue(), format));
+                        used.add(e.getValue().toLowerCase(Locale.ROOT));
+                    }
+                    checkHolder(id, holder.trim());
+                } else if (topper instanceof ConfigurationSection map) {
+                    for (String period : map.getKeys(false)) {
+                        String holder = map.getString(period, "");
+                        if (holder.isBlank()) continue;
+                        periodMap.put(period, Topper.pair(holder.trim(), format));
+                        used.add(holder.trim().toLowerCase(Locale.ROOT));
+                        checkHolder(id, holder.trim());
+                    }
                 }
-            }
 
-            boards.put(id, new Board(
-                    id,
-                    matchMaterial(board.getString("icon", "STONE")),
-                    board.getString("name", id),
-                    board.getString("category", ""),
-                    board.getStringList("description"),
-                    periodMap));
+                // placeholders written out by hand, for anything that is not Topper
+                ConfigurationSection periodsSection = board.getConfigurationSection("periods");
+                if (periodsSection != null) {
+                    for (String periodId : periodsSection.getKeys(false)) {
+                        String path = "periods." + periodId + ".";
+                        periodMap.put(periodId, new Board.PlaceholderPair(
+                                board.getString(path + "name", ""),
+                                board.getString(path + "value", "")));
+                    }
+                }
+                if (periodMap.isEmpty()) {
+                    plugin.getLogger().warning("leaderboards.yml: board '" + id + "' has no 'topper' and no 'periods', so it shows nothing.");
+                }
+
+                String name = board.getString("name", id);
+                String category = board.getString("category", "");
+                boards.put(id, new Board(
+                        id,
+                        matchMaterial(board.getString("icon", "STONE")),
+                        name,
+                        category,
+                        board.getStringList("description"),
+                        periodMap,
+                        new Board.Look(
+                                board.getString("display.title", name),
+                                board.getString("display.value-header", "Value"),
+                                board.getString("display.value-suffix", ""),
+                                board.getString("display.tab", category.isEmpty() ? id : category))));
+            }
         }
+
+        // Every holder Topper has that no board uses yet, when asked for
+        if (config.getBoolean("topper.auto-boards", false)) {
+            for (String holder : topperHolders) {
+                String key = holder.toLowerCase(Locale.ROOT);
+                if (used.contains(key) || Topper.isWindowOf(holder, topperHolders) || boards.containsKey(key)) continue;
+                boards.put(key, topperBoard(holder));
+            }
+        }
+    }
+
+    private void checkHolder(String board, String holder) {
+        if (topperHolders.isEmpty()) return;
+        for (String known : topperHolders) if (known.equalsIgnoreCase(holder)) return;
+        plugin.getLogger().warning("leaderboards.yml: board '" + board + "' uses the Topper holder '" + holder
+                + "', which is not in Topper's config.yml (it has: " + String.join(", ", topperHolders) + ").");
+    }
+
+    /** A board for a Topper holder that has no entry in leaderboards.yml. */
+    private Board topperBoard(String holder) {
+        Map<String, Board.PlaceholderPair> periodMap = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : Topper.periodHolders(holder, topperHolders).entrySet()) {
+            periodMap.put(e.getKey(), Topper.pair(e.getValue(), null));
+        }
+        String title = Topper.title(holder);
+        return new Board(holder.toLowerCase(Locale.ROOT), Material.PAPER, "&f" + title, "Topper",
+                List.of("Ranks players by " + title.toLowerCase(Locale.ROOT) + "."), periodMap,
+                new Board.Look(title, "Value", "", title));
+    }
+
+    /**
+     * A board by its id, or a Topper holder written as {@code topper:<holder>} even if leaderboards.yml does not have
+     * it, so a board in the world needs no configuration.
+     */
+    public Board board(String id) {
+        Board board = boards.get(id.toLowerCase(Locale.ROOT));
+        if (board == null) board = boards.get(id);
+        if (board != null) return board;
+        if (id.regionMatches(true, 0, "topper:", 0, 7) && id.length() > 7) {
+            String holder = id.substring(7);
+            for (String known : topperHolders) if (known.equalsIgnoreCase(holder)) return topperBoard(known);
+            if (topperHolders.isEmpty() && holder.matches("[A-Za-z0-9_\\-]+")) return topperBoard(holder);
+        }
+        return null;
+    }
+
+    public Set<String> topperHolders() {
+        return topperHolders;
+    }
+
+    public YamlConfiguration display() {
+        return display;
     }
 
     public int refreshIntervalTicks() {

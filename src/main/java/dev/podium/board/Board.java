@@ -11,9 +11,13 @@ import java.util.Map;
  * falls back to "all_time".
  */
 public record Board(String id, Material icon, String name, String category, List<String> description,
-                     Map<String, PlaceholderPair> periods) {
+                     Map<String, PlaceholderPair> periods, Look look) {
 
     public record PlaceholderPair(String namePattern, String valuePattern) {
+    }
+
+    /** How the board looks as a board in the world: its title, the head of the value column, the tab text. */
+    public record Look(String title, String valueHeader, String valueSuffix, String tab) {
     }
 
     public PlaceholderPair placeholdersFor(String periodId) {
