@@ -1,17 +1,39 @@
 ## Podium
 
-A leaderboard dashboard and a stats menu, in one plugin. Both are pure GUI - all the actual
-numbers come from PlaceholderAPI, so it works with [Topper](https://github.com/Topper-MC/Topper)
-or any other placeholder provider you already have.
+Leaderboards for Paper 1.21.11, three ways: a menu, boards that stand in the world, and a stats menu. All the numbers come from PlaceholderAPI, and it is made to go with [Topper](https://github.com/Topper-MC/Topper): a board is one line, the name of a Topper holder. Anything else that gives PlaceholderAPI placeholders works too.
 
-### Leaderboards
+Needs PlaceholderAPI. Topper is optional but is what the default boards use.
 
-`/leaderboards` opens a dashboard: every configured board shows up as an icon, with a filter
-item to switch between All Time / Monthly / Weekly / Daily. Clicking a board opens its own
-paginated ranking list.
+### Boards in the world
 
-Adding a new leaderboard is one entry in `leaderboards.yml`, under `boards:` - icon, name,
-description, and a placeholder pair per period it supports:
+Look at a wall and run `/podium display create <id> <board> [more boards]`. A board appears there: a title, a table of the top 10 (rank, player, value), and tabs under it. Right or left click a tab to switch.
+
+- The bottom row of tabs switches between the boards you named (Balance, Kills, ...).
+- The row above it switches the time window: Daily, Monthly, All Time. A board only gets the windows it has numbers for (see below), and the tabs are rebuilt when you change board.
+- Clicking blanks the table for a moment and fills it in again from the top, with a click sound. Everyone sees the same board. After 30 seconds without a click it goes back to the first board and period.
+- A board is only built while a player is near it, so empty places cost nothing. It refreshes every 5 seconds.
+- Nothing is saved in the world: the displays are rebuilt from `displays.yml` when someone comes near, so a restart or an unloaded chunk leaves nothing behind.
+
+| Command | What it does |
+| --- | --- |
+| `/podium display create <id> <board...>` | Put one up on the wall you are looking at (or in front of you) |
+| `/podium display place <id> <world> <x> <y> <z> <yaw> <board...>` | The same with exact coordinates, also from the console |
+| `/podium display move <id>` | Move it to where you are looking |
+| `/podium display scale <id> <number>` | Make it bigger or smaller (1 is normal) |
+| `/podium display rotate <id> [degrees]` | Turn it, 180 by default. Use it if the text reads backwards |
+| `/podium display tp <id>` | Teleport in front of it |
+| `/podium display select <id> <board or period>` | Switch it from a command |
+| `/podium display refresh <id>`, `list`, `remove <id>` | |
+| `/podium reload` | Reload every file and rebuild the boards |
+| `/podium topper` | The Topper holders Podium found |
+
+`display.yml` is the look: rows, text and letter size, row spacing, the dark panel behind it, column positions, rank colours, tab text and colours, click sound, how long before it resets, and the blank flash. `always-built: true` keeps boards built with nobody near. `displays.yml` holds where each board is (the commands write it, an unreadable file is never overwritten).
+
+Text is drawn with the plain text display entity, so a wooden frame like the one in your screenshots is your own build: turn the panel off in `display.yml` (`panel.enabled: false`) and scale the board to fit it. If the rows do not line up with your frame, `row-height` and `text-scale` are the two numbers to change.
+
+### The Topper hook
+
+In `leaderboards.yml` a board is:
 
 ```yaml
 boards:
@@ -20,28 +42,52 @@ boards:
     name: "&a$ Top Money"
     category: "Money"
     description:
-      - "Ranks players by total money earned."
-    periods:
-      all_time:
-        name: "%topper_money;top_name;<position>%"
-        value: "%topper_money;top_value;<position>%"
+      - "Ranks players by the total"
+      - "amount of money they have earned."
+    topper: money
+    display:
+      value-header: "Balance"
+      tab: "Balance"
 ```
 
-It appears on the dashboard automatically - no slot to wire up. The grid, filler, navigation
-and per-entry item format for every board's ranking list are all defined once, under
-`board-template:`, so a new board doesn't have to redeclare any of that.
+`topper: money` is the name of the holder. Podium reads Topper's own `config.yml` for the holders, tells you at startup if a name is not there, and uses Topper's placeholders (`%topper_money;top_name;<position>%` and `top_value`) for the names and values. If Topper also has holders named `money_daily`, `money_weekly` or `money_monthly` (what TimedTopper makes), the Daily, Weekly and Monthly tabs and filters use them by themselves. To name them yourself:
 
-`/leaderboards <board>` jumps straight to one board. `/leaderboards reload` reloads config.
+```yaml
+    topper:
+      all_time: money
+      daily: money_daily
+      monthly: money_monthly
+```
 
-### Stats
+`value-format: "#,###"` is a Topper number format for the values. Without a daily or monthly holder a board only has All Time, and its tab row is not shown: Podium does not show all-time numbers under a Daily label.
 
-`/stats` (or `/stats <player>` with `podium.stats.others`) opens one menu, edited in one
-place: `stats-menu.yml`. Each entry is a slot, an icon, and any PlaceholderAPI placeholder
-for its lore - add or remove as many as you want.
+Also in the hook: `/podium display create wall topper:kills` makes a board from a Topper holder that is not in `leaderboards.yml`, and `topper.auto-boards: true` in `config.yml` adds every holder no board uses yet to the dashboard.
+
+For anything that is not Topper, write the placeholders out, one pair for each period the board has:
+
+```yaml
+    periods:
+      all_time:
+        name: "%some_placeholder_<position>_name%"
+        value: "%some_placeholder_<position>_value%"
+```
+
+### Menus
+
+`/leaderboards` opens a dashboard: every board is an icon, with a filter to switch between All Time, Monthly, Weekly and Daily. Click a board for its ranking list, click a name for that player's stats. `/leaderboards <board>` jumps to one, `/leaderboards reload` reloads. The grid, filler and buttons are defined once under `board-template:` in `leaderboards.yml`.
+
+`/stats` (or `/stats <player>` with `podium.stats.others`) opens one menu, edited in `stats-menu.yml`: a slot, an icon, and any PlaceholderAPI placeholder in the lore.
 
 ### Permissions
 
-- `podium.leaderboards` (default: true)
-- `podium.stats` (default: true)
-- `podium.stats.others` (default: op)
-- `podium.admin` (default: op)
+- `podium.leaderboards` (everyone): the menus, and clicking the tabs of a board in the world
+- `podium.stats` (everyone), `podium.stats.others` (op)
+- `podium.admin` (op): `/podium`
+
+### Telemetry
+
+On startup Podium sends a small anonymous beacon (plugin name/version, server software/version, online/max player counts, and a random ID with no player data) so we know which versions are in use. Turn it off with `metrics.enabled: false` in `config.yml`.
+
+### License
+
+See `LICENSE`: free to run on your own servers, not for redistribution or resale.
