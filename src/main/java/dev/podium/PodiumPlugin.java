@@ -5,6 +5,7 @@ import dev.podium.command.PodiumCommand;
 import dev.podium.command.StatsCommand;
 import dev.podium.config.Settings;
 import dev.podium.menu.Menus;
+import dev.podium.util.Placeholders;
 import dev.podium.world.WorldBoards;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -41,6 +42,13 @@ public final class PodiumPlugin extends JavaPlugin {
         podiumCommand.setTabCompleter(podium);
 
         Metrics.start(this);
+        int holders = settings.topperHolders().size();
+        getLogger().info("Ready: " + settings.boards().size() + " board(s), " + worlds.ids().size() + " world display(s), "
+                + (holders > 0 ? "Topper with " + holders + " holder(s)" : "no Topper holders found")
+                + ", PlaceholderAPI " + (Placeholders.present() ? "found" : "MISSING") + ".");
+        if (!Placeholders.present()) {
+            getLogger().severe("PlaceholderAPI is not installed. Podium reads every name and number through it, so every board will be empty.");
+        }
         Banner.print(this, "Thanks for keeping score.");
     }
 
