@@ -36,8 +36,9 @@ public final class StatsCommand implements CommandExecutor {
                 player.sendMessage(settings.prefixed("no-permission"));
                 return true;
             }
-            target = Bukkit.getOfflinePlayer(args[0]);
-            if (!target.hasPlayedBefore() && !target.isOnline()) {
+            // Not getOfflinePlayer(name): for a name the server has never seen that asks Mojang, and waits for the answer
+            target = Bukkit.getOfflinePlayerIfCached(args[0]);
+            if (target == null) {
                 player.sendMessage(settings.prefixed("player-not-found").replace("<player>", args[0]));
                 return true;
             }

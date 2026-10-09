@@ -22,6 +22,8 @@ public final class Settings {
     public record MenuItem(int slot, Material material, String name, List<String> lore) {
     }
 
+    private static final int MAX_SLOT = 53;
+
     private final JavaPlugin plugin;
 
     private YamlConfiguration config;
@@ -138,7 +140,10 @@ public final class Settings {
         return material != null ? material : Material.STONE;
     }
 
-    /** Parses "[0-6, 9-16, 25]" style slot lists into an ordered list of slots. */
+    /**
+     * Parses "[0-6, 9-16, 25]" style slot lists into an ordered list of slots. Anything that is not a slot of an
+     * inventory (0 to 53) or not a number is left out, so a typo cannot break a menu.
+     */
     public static List<Integer> parseSlots(String raw) {
         List<Integer> slots = new ArrayList<>();
         if (raw == null) return slots;
@@ -146,13 +151,18 @@ public final class Settings {
         for (String part : cleaned.split(",")) {
             String token = part.trim();
             if (token.isEmpty()) continue;
-            if (token.contains("-")) {
-                String[] bounds = token.split("-", 2);
-                int from = Integer.parseInt(bounds[0].trim());
-                int to = Integer.parseInt(bounds[1].trim());
-                for (int slot = from; slot <= to; slot++) slots.add(slot);
-            } else {
-                slots.add(Integer.parseInt(token));
+            try {
+                if (token.contains("-")) {
+                    String[] bounds = token.split("-", 2);
+                    int from = Integer.parseInt(bounds[0].trim());
+                    int to = Integer.parseInt(bounds[1].trim());
+                    for (int slot = Math.max(0, from); slot <= Math.min(MAX_SLOT, to); slot++) slots.add(slot);
+                } else {
+                    int slot = Integer.parseInt(token);
+                    if (slot >= 0 && slot <= MAX_SLOT) slots.add(slot);
+                }
+            } catch (NumberFormatException e) {
+                // not a slot, skipped
             }
         }
         return slots;

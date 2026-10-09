@@ -319,7 +319,7 @@ public final class Menus implements Listener {
         for (Player player : Bukkit.getOnlinePlayers()) {
             try {
                 Inventory top = player.getOpenInventory().getTopInventory();
-                InventoryHolder holder = top.getHolder();
+                InventoryHolder holder = top.getHolder(false);
                 if (holder instanceof BoardHolder boardHolder) {
                     renderBoard(top, player, boardHolder.board, boardHolder.page);
                 } else if (holder instanceof StatsHolder statsHolder) {
@@ -344,14 +344,14 @@ public final class Menus implements Listener {
 
     @EventHandler
     public void onDrag(InventoryDragEvent event) {
-        if (!isPodiumMenu(event.getInventory().getHolder())) return;
+        if (!isPodiumMenu(event.getInventory().getHolder(false))) return;
         int topSize = event.getView().getTopInventory().getSize();
         if (event.getRawSlots().stream().anyMatch(slot -> slot < topSize)) event.setCancelled(true);
     }
 
     @EventHandler
     public void onClick(InventoryClickEvent event) {
-        InventoryHolder holder = event.getInventory().getHolder();
+        InventoryHolder holder = event.getInventory().getHolder(false);
         if (!isPodiumMenu(holder)) return;
 
         event.setCancelled(true);
