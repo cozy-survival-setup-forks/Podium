@@ -39,6 +39,8 @@ public final class PodiumPlugin extends JavaPlugin {
         PluginCommand podiumCommand = getCommand("podium");
         podiumCommand.setExecutor(podium);
         podiumCommand.setTabCompleter(podium);
+
+        Banner.print(this, "Thanks for keeping score.");
     }
 
     @Override
