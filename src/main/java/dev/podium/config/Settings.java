@@ -34,24 +34,70 @@ public final class Settings {
     private final Map<String, Board> boards = new LinkedHashMap<>();
     private final List<Period> periods = new ArrayList<>();
 
+    private boolean loaded;
+
     public Settings(JavaPlugin plugin) {
         this.plugin = plugin;
-        reload();
+        loaded = reload();
     }
 
-    public void reload() {
+    /** False when the first read failed, the plugin has nothing to run on. */
+    public boolean loaded() {
+        return loaded;
+    }
+
+    /**
+     * Reads the four files. If one has a mistake in it, nothing is replaced: what was loaded before stays in use and
+     * the console says which file and why.
+     *
+     * @return false if a file could not be read
+     */
+    public boolean reload() {
         plugin.saveDefaultConfig();
         saveDefault("leaderboards.yml");
         saveDefault("stats-menu.yml");
         saveDefault("messages.yml");
 
-        config = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "config.yml"));
-        leaderboards = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "leaderboards.yml"));
-        statsMenu = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "stats-menu.yml"));
-        messages = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "messages.yml"));
+        YamlConfiguration newConfig, newBoards, newStats, newMessages;
+        try {
+            newConfig = strict("config.yml");
+            newBoards = strict("leaderboards.yml");
+            newStats = strict("stats-menu.yml");
+            newMessages = strict("messages.yml");
+        } catch (java.io.IOException | org.bukkit.configuration.InvalidConfigurationException e) {
+            plugin.getLogger().severe(e.getMessage() + " Fix the file, or delete it to get the default one.");
+            return false;
+        }
+        // Texts added in newer versions still work with an older messages.yml
+        try (var defaults = plugin.getResource("messages.yml")) {
+            if (defaults != null) {
+                newMessages.setDefaults(YamlConfiguration.loadConfiguration(
+                        new java.io.InputStreamReader(defaults, java.nio.charset.StandardCharsets.UTF_8)));
+            }
+        } catch (java.io.IOException e) {
+            plugin.getLogger().warning("Could not read the default messages.yml: " + e.getMessage());
+        }
+
+        config = newConfig;
+        leaderboards = newBoards;
+        statsMenu = newStats;
+        messages = newMessages;
 
         loadPeriods();
         loadBoards();
+        return true;
+    }
+
+    /** Bukkit's own loader only logs a broken file and carries on with an empty one. */
+    private YamlConfiguration strict(String name) throws java.io.IOException, org.bukkit.configuration.InvalidConfigurationException {
+        YamlConfiguration yaml = new YamlConfiguration();
+        File file = new File(plugin.getDataFolder(), name);
+        try {
+            yaml.load(file);
+        } catch (java.io.IOException | org.bukkit.configuration.InvalidConfigurationException e) {
+            throw new org.bukkit.configuration.InvalidConfigurationException(name + " could not be read: " + e.getMessage());
+        }
+        return yaml;
     }
 
     private void saveDefault(String name) {
@@ -62,8 +108,12 @@ public final class Settings {
     private void loadPeriods() {
         periods.clear();
         for (Map<?, ?> entry : leaderboards.getMapList("periods")) {
+            if (entry.get("id") == null) {
+                plugin.getLogger().warning("leaderboards.yml: a period without an id was skipped.");
+                continue;
+            }
             String id = String.valueOf(entry.get("id"));
-            String label = String.valueOf(entry.get("label"));
+            String label = entry.get("label") == null ? id : String.valueOf(entry.get("label"));
             periods.add(new Period(id, label));
         }
     }
@@ -119,7 +169,8 @@ public final class Settings {
     }
 
     public String message(String key) {
-        return messages.getString(key, "");
+        String text = messages.getString(key);
+        return text == null ? "" : text;
     }
 
     public String prefixed(String key) {

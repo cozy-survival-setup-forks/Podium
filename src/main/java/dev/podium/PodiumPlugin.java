@@ -11,6 +11,12 @@ public final class PodiumPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         Settings settings = new Settings(this);
+        if (!settings.loaded()) {
+            getLogger().severe("Podium cannot start with a broken file, so it is switching itself off. Fix the file named above, "
+                    + "or delete it to get the default one, then restart.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
         Menus menus = new Menus(this, settings);
         getServer().getPluginManager().registerEvents(menus, this);
 

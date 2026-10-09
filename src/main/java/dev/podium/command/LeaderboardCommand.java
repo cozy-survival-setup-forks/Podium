@@ -38,8 +38,7 @@ public final class LeaderboardCommand implements CommandExecutor, TabCompleter {
                 player.sendMessage(settings.prefixed("no-permission"));
                 return true;
             }
-            settings.reload();
-            player.sendMessage(settings.prefixed("reloaded"));
+            player.sendMessage(settings.prefixed(settings.reload() ? "reloaded" : "reload-failed"));
             return true;
         }
 
