@@ -84,9 +84,17 @@ For anything that is not Topper, write the placeholders out, one pair for each p
 - `podium.stats` (everyone), `podium.stats.others` (op)
 - `podium.admin` (op): `/podium`
 
-### Telemetry
+### Keeping your files safe
 
-On startup Podium sends a small anonymous beacon (plugin name/version, server software/version, online/max player counts, and a random ID with no player data) so we know which versions are in use. Turn it off with `metrics.enabled: false` in `config.yml`.
+- `config.yml`, `display.yml` and `messages.yml` start with a `config-version` / `lang-version` number. After an update, new settings are added to your files with their comments, and nothing you changed is touched. The old file is kept next to it as `<name>.<date>.bak` (the newest 5). A setting is only removed when the changelog says so.
+- A value with a mistake (a negative time, an item that does not exist, text where a number belongs) is named in the console by file and key. On a reload, the settings in use stay as they were.
+- Files are written to a temporary file and moved into place, with the previous version kept as `.bak`. A file that cannot be read is restored from its `.bak`, and the unreadable one is kept as `.broken-<time>`.
+- A file or database that was made by a newer version of the plugin is left alone and a warning is logged.
+- `/podium doctor` shows the health of the files, versions, last backup and recent save failures (no player data). `/podium backup now` makes a checked backup right away. Both need the admin permission.
+
+## Telemetry
+
+On startup Podium sends a small anonymous beacon (plugin name/version, server software/version, online/max player counts, and a random ID with no player data) so we know which versions are in use. Turn it off with `metrics.enabled: false` in `config.yml`. The random ID is kept as `server-id` in `data.yml` (older versions kept it in a `.server-id` file, which is moved over unchanged). The address and the interval are fixed in the plugin and are not settings.
 
 ### License
 

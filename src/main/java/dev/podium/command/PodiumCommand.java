@@ -25,10 +25,12 @@ public final class PodiumCommand implements TabExecutor {
 
     private static final List<String> DISPLAY_SUBS = List.of("create", "place", "remove", "list", "tp", "move", "scale", "rotate", "periods", "select", "refresh");
 
+    private final dev.podium.PodiumPlugin plugin;
     private final Settings settings;
     private final WorldBoards worlds;
 
-    public PodiumCommand(Settings settings, WorldBoards worlds) {
+    public PodiumCommand(dev.podium.PodiumPlugin plugin, Settings settings, WorldBoards worlds) {
+        this.plugin = plugin;
         this.settings = settings;
         this.worlds = worlds;
     }
@@ -51,6 +53,11 @@ public final class PodiumCommand implements TabExecutor {
                 boolean ok = settings.reload();
                 if (ok) worlds.reload();
                 say(sender, ok ? "reloaded" : "reload-failed");
+            }
+            case "doctor" -> plugin.doctor().forEach(sender::sendPlainMessage);
+            case "backup" -> {
+                if (args.length < 2 || !args[1].equalsIgnoreCase("now")) sender.sendPlainMessage("Use /podium backup now");
+                else sender.sendPlainMessage(plugin.backupNow() ? "Backup made and checked." : "The backup FAILED, see the console.");
             }
             case "display" -> display(sender, Arrays.copyOfRange(args, 1, args.length));
             case "topper" -> {
@@ -283,7 +290,7 @@ public final class PodiumCommand implements TabExecutor {
         if (!sender.hasPermission("podium.admin")) return options;
 
         if (args.length == 1) {
-            options.addAll(List.of("reload", "display", "topper"));
+            options.addAll(List.of("reload", "display", "topper", "doctor", "backup"));
         } else if (args[0].equalsIgnoreCase("display")) {
             String sub = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "";
             if (args.length == 2) {

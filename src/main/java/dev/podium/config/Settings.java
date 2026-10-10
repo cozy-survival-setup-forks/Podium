@@ -3,6 +3,9 @@ package dev.podium.config;
 import dev.podium.board.Board;
 import dev.podium.board.Period;
 import dev.podium.board.Topper;
+import dev.podium.safe.ConfigMigrator;
+import dev.podium.safe.Guard;
+import dev.podium.safe.Prep;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -26,6 +29,24 @@ public final class Settings {
     }
 
     private static final int MAX_SLOT = 53;
+
+    public static final int CONFIG_VERSION = 1;
+    public static final int LANG_VERSION = 1;
+
+    /**
+     * The files that get new settings added when the plugin is updated. leaderboards.yml and stats-menu.yml are
+     * lists of boards and menu items that the owner builds, so nothing is added to them.
+     */
+    public static final List<Prep.Spec> FILES = List.of(
+            new Prep.Spec("config.yml", "config-version", CONFIG_VERSION, Prep.configMigrator(CONFIG_VERSION), rules ->
+                    rules.range("refresh-interval-ticks", 1, 72000)),
+            new Prep.Spec("display.yml", "config-version", CONFIG_VERSION, new ConfigMigrator("config-version", CONFIG_VERSION), rules -> {
+                rules.range("refresh-seconds", 1, 600);
+                rules.range("view-range", 4, 128);
+                rules.range("rows", 1, 15);
+                rules.range("idle-reset-seconds", 0, 86400);
+            }),
+            new Prep.Spec("messages.yml", "lang-version", LANG_VERSION, new ConfigMigrator("lang-version", LANG_VERSION), null));
 
     private final JavaPlugin plugin;
 
@@ -58,6 +79,14 @@ public final class Settings {
      * @return false if a file could not be read
      */
     public boolean reload() {
+        if (loaded) {
+            // a real reload (not the first start): a value with a mistake cancels it and what is in use stays
+            List<Guard.Problem> problems = Prep.validate(plugin, FILES);
+            if (!problems.isEmpty()) {
+                Prep.logRejected(plugin, problems);
+                return false;
+            }
+        }
         plugin.saveDefaultConfig();
         saveDefault("leaderboards.yml");
         saveDefault("stats-menu.yml");

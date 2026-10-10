@@ -1,3 +1,4 @@
+config-version: 1
 # Podium settings. Board and stat item definitions live in leaderboards.yml and stats-menu.yml.
 
 # How often (in ticks) open menus refresh their placeholder values. 20 ticks = 1 second.
@@ -14,4 +15,3 @@ topper:
 # counts, nothing else. Set to false to turn it off.
 metrics:
   enabled: true
-  interval-minutes: 45

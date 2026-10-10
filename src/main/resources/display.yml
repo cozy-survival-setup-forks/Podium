@@ -1,3 +1,4 @@
+config-version: 1
 # Boards drawn in the world, with tabs players click to switch between the boards and between Daily, Monthly and
 # All Time. Put one up with /podium display create <id> <board> [more boards], look at the wall you want it on.
 # Where they are is saved in displays.yml. /podium reload applies changes made here.

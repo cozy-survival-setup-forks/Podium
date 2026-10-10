@@ -1,12 +1,13 @@
 package dev.podium.world;
 
 import dev.podium.config.Settings;
+import dev.podium.safe.Health;
+import dev.podium.safe.SafeIo;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Interaction;
@@ -24,8 +25,6 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -89,15 +88,16 @@ public final class WorldBoards implements Listener {
     private void load() {
         broken = false;
         if (!file.isFile()) return;
-        YamlConfiguration yaml = new YamlConfiguration();
-        try {
-            yaml.load(file);
-        } catch (IOException | InvalidConfigurationException e) {
+        // an unreadable file is restored from its .bak; with no usable backup it is left alone and nothing is saved over it
+        SafeIo.Loaded loaded = SafeIo.loadYaml(file.toPath(), SafeIo.Policy.PROTECTED, plugin.getLogger());
+        if (loaded.state == SafeIo.State.BLOCKED) {
             broken = true;
             plugin.getLogger().severe("displays.yml could not be read, so no world board is shown and nothing will be saved over it: "
-                    + e.getMessage() + " Fix the file, or delete it, then /podium reload.");
+                    + loaded.note + ". Fix the file, or delete it, then /podium reload.");
             return;
         }
+        SafeIo.refreshBackup(file.toPath());
+        YamlConfiguration yaml = loaded.yaml;
         ConfigurationSection section = yaml.getConfigurationSection("displays");
         if (section == null) return;
         for (String id : section.getKeys(false)) {
@@ -137,18 +137,12 @@ public final class WorldBoards implements Listener {
             yaml.set(path + "boards", board.boardIds());
             yaml.set(path + "periods", board.periodIds());
         }
-        File temp = new File(file.getParentFile(), "displays.yml.tmp");
         try {
-            plugin.getDataFolder().mkdirs();
-            yaml.save(temp);
-            try {
-                Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (java.nio.file.AtomicMoveNotSupportedException e) {
-                Files.move(temp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
+            SafeIo.writeYaml(file.toPath(), yaml.saveToString());
             return true;
         } catch (IOException e) {
             plugin.getLogger().severe("Could not save displays.yml: " + e.getMessage());
+            Health.failure("displays.yml could not be saved: " + e.getMessage());
             return false;
         }
     }
