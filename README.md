@@ -89,6 +89,7 @@ For anything that is not Topper, write the placeholders out, one pair for each p
 - `config.yml`, `display.yml` and `messages.yml` start with a `config-version` / `lang-version` number. After an update, new settings are added to your files with their comments, and nothing you changed is touched. The old file is kept next to it as `<name>.<date>.bak` (the newest 5). A setting is only removed when the changelog says so.
 - A value with a mistake (a negative time, an item that does not exist, text where a number belongs) is named in the console by file and key. On a reload, the settings in use stay as they were.
 - Files are written to a temporary file and moved into place, with the previous version kept as `.bak`. A file that cannot be read is restored from its `.bak`, and the unreadable one is kept as `.broken-<time>`.
+- `leaderboards.yml` and `stats-menu.yml` are your own lists of boards and menu items, so nothing is added to them; they are only kept readable (restored from their `.bak` if damaged). `displays.yml`, where your world boards are, is restored from its `.bak` if it is damaged, and with no usable backup it is left exactly as it is and nothing is written over it.
 - A file or database that was made by a newer version of the plugin is left alone and a warning is logged.
 - `/podium doctor` shows the health of the files, versions, last backup and recent save failures (no player data). `/podium backup now` makes a checked backup right away. Both need the admin permission.
 
